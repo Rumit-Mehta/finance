@@ -1,13 +1,12 @@
 import os
 import pandas as pd
-# import src.constants as con
+from finance import constants
 from openpyxl import load_workbook
 
-
 # File paths
-CSV_FILE = "src/monzo/monzo_transactions.csv"
-EXCEL_FILE = "finance_masters_sheet_test.xlsx"
-SHEET_NAME = "Tracking"
+CSV_FILE = constants.CSV_FILE
+EXCEL_FILE = constants.EXCEL_FILE
+SHEET_NAME = constants.SHEET_NAME
 
 
 # Function to append CSV data to the end of an existing table in Excel
