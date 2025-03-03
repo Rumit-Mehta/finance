@@ -1,7 +1,9 @@
 import requests
+import logging
 import pandas as pd
-
 from finance.constants import ACCESS_TOKEN
+
+logger = logging.getLogger(__name__)
 
 
 # Fetch account ID
@@ -10,12 +12,15 @@ def get_account_id():
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
     response = requests.get(url, headers=headers)
     
-    if response.status_code == 200:
+    # response.raise_for_status()
+    if response.status_code in [200, 201, 204] :
         accounts = response.json()["accounts"]
-        print("DONE - get")
+        logging.debug(f"successful connection to {url}")
         if accounts:
+            logging.info("DONE 1/4 - Access acount ID")
             return accounts[0]["id"]  # Using the first account
     raise Exception("Failed to retrieve Monzo account ID.")
+
 
 # Fetch transactions
 def get_transactions(account_id, date_from):
@@ -30,6 +35,7 @@ def get_transactions(account_id, date_from):
     response = requests.get(url, headers=headers, params=params)
     
     if response.status_code == 200:
+        logging.info("DONE 2/4  - Got transactions from Monzo API")
         return response.json()["transactions"]
     raise Exception("Failed to retrieve transactions.")
 
@@ -46,12 +52,15 @@ def transactions_to_dataframe(transactions):
             "Notes": txn.get("notes", ""),
         })
     
+    if data:
+        logging.info("DONE 3/4 - Converted transactions to dataframe")
+
     return pd.DataFrame(data)
 
 # Save DataFrame to CSV
 def save_to_csv(df, filename="files/monzo_transactions.csv"):
     df.to_csv(filename, index=False)
-    print(f"Transactions saved to {filename}")
+    logging.info(f"DONE 4/4 - Transactions saved to {filename}")
 
 
 
