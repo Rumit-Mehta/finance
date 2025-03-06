@@ -4,4 +4,4 @@ init:
 
 run:
 	@python3 app.py
-	@open files/finance_master_sheet_test.xlsx
+	# @open files/finance_master_sheet_test.xlsx

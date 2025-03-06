@@ -24,14 +24,16 @@ def get_account_id():
 def get_transactions(account_id, date_from):
     url = f"https://api.monzo.com/transactions"
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+    print(f"Date from: {date_from}")
     params = {
         "account_id": account_id,
         "expand[]": "merchant",  # Expands merchant info if available
-        "since": date_from
+        "since": str(date_from)
     }
     
     response = requests.get(url, headers=headers, params=params)
-    
+    print(f"params: {params}")
+
     if response.status_code == 200:
         transactions = response.json()["transactions"]    
         
@@ -40,9 +42,9 @@ def get_transactions(account_id, date_from):
             # Get the date of the last transaction (assuming the list is in chronological order)
             last_transaction_date = transactions[-1]["created"]
 
-            # Append the date to a text file
+            # Send the date to a text file, overriding previous date
             with open("files/monzo_last_transaction_date.txt", "w") as file:
-                file.write(f"{last_transaction_date}\n")
+                file.write(f"{last_transaction_date}")
                 logging.info(f"Last transaction date saved: {last_transaction_date}")
         else: 
             logging.info("No transactions found.")

@@ -12,6 +12,7 @@ ACCESS_TOKEN = os.getenv('MONZO_SECRET_ACCESS_TOKEN')
 EXCEL_FILE = os.getenv('EXCEL_FILE')
 CSV_FILE = os.getenv('CSV_FILE')
 SHEET_NAME = os.getenv('SHEET_NAME')
+MONZO_LAST_TRANSACTION = os.getenv('MONZO_LAST_TRANSACTION_FILE')
 
 # Excel rows for Tracking table
 XL_DATE_ROW = 3
@@ -19,6 +20,7 @@ XL_TYPE_ROW = 4
 XL_CATEGORY_ROW = 5
 XL_AMOUNT_ROW = 6
 XL_DETAILS_ROW = 7
+XL_ACCOUNT_ROW = 9
 
 if __name__ == '__main__':
     print(ACCESS_TOKEN)

@@ -115,7 +115,7 @@ def append_csv_to_excel(csv_file=CSV_FILE, excel_file=EXCEL_FILE, sheet_name=SHE
         # Column I (Account)
         cell = sheet.cell(row=new_row_index, column=9, value=row["Account"])
         cell.font = font_style
-        cell.alignment = indent_style_small
+        cell.alignment = indent_style
 
         # Column J (Effective Date)
         row['Effective Date'] = f'=IF(AND(D{new_row_index}="Income", shift_income_status = "Active", DAY(C{new_row_index})>=shift_income_starting_date),DATE(YEAR(C{new_row_index}),MONTH(C{new_row_index})+1,1),(C{new_row_index}))'

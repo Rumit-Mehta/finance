@@ -1,3 +1,4 @@
+import logging
 import finance.constants as con
 from openpyxl import load_workbook
 from datetime import timedelta
@@ -7,7 +8,7 @@ EXCEL_FILE = con.EXCEL_FILE
 SHEET_NAME = "Transactions"
 
 # get the date for the last entry for a spefific account eg. monzo, amex etc
-def latest_entry(account):
+def latest_entry(account: str):
 
     # load the workbook and sheet
     workbook = load_workbook(EXCEL_FILE)
@@ -34,7 +35,10 @@ def latest_entry(account):
     else:
         print("No Monzo tag found in the file.")
 
-    
-    
     return latest_date
 
+def latest_entry_file(file):
+    with open(file, "r") as file:
+        latest_date = file.read()
+        logging.info(f'Latest Transaction Date: {latest_date}')
+    return latest_date
