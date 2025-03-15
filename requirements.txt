@@ -2,3 +2,6 @@ requests
 pandas
 python-dotenv
 openpyxl
+flask
+flask-session
+black
