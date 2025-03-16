@@ -8,7 +8,7 @@ from openpyxl.styles import Font, Alignment
 
 
 # File paths
-CSV_FILE = constants.CSV_FILE
+CSV_FILE = constants.MONZO_CSV_FILE
 EXCEL_FILE = constants.EXCEL_FILE
 SHEET_NAME = constants.SHEET_NAME
 

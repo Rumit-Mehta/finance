@@ -14,9 +14,10 @@ FLASK_SECRET = os.getenv("FLASK_SECRET_KEY")
 
 # files
 EXCEL_FILE = os.getenv("EXCEL_FILE")
-CSV_FILE = os.getenv("CSV_FILE")
+MONZO_CSV_FILE = os.getenv("MONZO_CSV_FILE")
 SHEET_NAME = os.getenv("SHEET_NAME")
 MONZO_LAST_TRANSACTION = os.getenv("MONZO_LAST_TRANSACTION_FILE")
+INPUT_FILE_PATH = os.getenv("INPUT_FILE_PATH")
 
 # Excel rows for Tracking table
 XL_DATE_ROW = 3
@@ -25,4 +26,3 @@ XL_CATEGORY_ROW = 5
 XL_AMOUNT_ROW = 6
 XL_DETAILS_ROW = 7
 XL_ACCOUNT_ROW = 9
-
