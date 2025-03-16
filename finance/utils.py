@@ -52,6 +52,7 @@ def latest_entry_file(file):
         logging.info(f"Latest Transaction Date: {latest_date}")
     return latest_date
 
+
 def file_setup():
 
     required_files = [
