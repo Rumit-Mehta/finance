@@ -1,5 +1,7 @@
 import logging
+import os
 import finance.constants as con
+import files
 from openpyxl import load_workbook
 from datetime import timedelta
 
@@ -49,3 +51,18 @@ def latest_entry_file(file):
         latest_date = file.read()
         logging.info(f"Latest Transaction Date: {latest_date}")
     return latest_date
+
+def file_setup():
+
+    required_files = [
+        "files/monzo_last_transaction_date.txt",
+        "files/trading212_last_transaction_date.txt",
+        "files/revolut_last_transaction_date.txt",
+    ]
+
+    for file in required_files:
+        if not os.path.exists(file):
+            with open(file, "w") as f:
+                logging.info(f"Created file: {file}")
+        else:
+            logging.info(f"File exists: {file}")
