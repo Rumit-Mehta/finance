@@ -80,7 +80,6 @@ def process_trading212_csv(df):
     if start_date:
         start_date = pd.to_datetime(start_date, errors="coerce")
         df = df[df["Time"] > start_date]  # Filter only new transactions
-        # print(df)
 
     if df.empty:
         logging.info("No new transactions to process.")
@@ -90,7 +89,6 @@ def process_trading212_csv(df):
     selected_columns = ["Action", "Time", "Total", "Merchant name", "Merchant category"]
     df = df[selected_columns]
     df = df[df["Action"] != "Deposit"]  # Remove 'Deposit' rows
-
 
     # Merge 'Spending cashback' rows into one row
     cashback_rows = df[df["Action"] == "Spending cashback"]
@@ -107,16 +105,35 @@ def process_trading212_csv(df):
                     "Time": latest_cashback_time,  # Set to latest timestamp
                     "Total": total_cashback,
                     "Merchant name": None,
-                    "Merchant category": None,
+                    "Merchant category": "Other"
                 }
             ]
         )
         df = pd.concat([df, new_row], ignore_index=True)
 
+    # Initialising new columns
+    df["Account"] = "T212"
+    df["Action"] = np.where(df["Total"].astype(float) < 0, "Expenses", "Income")
+    df["Total"] = pd.to_numeric(df["Total"], errors="coerce").abs()
+    df["Balance"] = (
+        '=SUMPRODUCT([Amount],--([Date]<=[@Date]), (([Type]="Expenses") + ([Type]="Savings")) * (-1) + ([Type] = "Income"))'
+    )
+    df["Effective Date"] = (
+        '=IF(AND([@Type]="Income", shift_income_status = "Active", DAY([@Date])>=shift_income_starting_date),DATE(YEAR([@Date]),MONTH([@Date])+1,1),([@Date]))'
+    )
+
+    # Renaming Columns
+    df.rename(columns = {
+        "Action": "Type",
+        "Time": "Date",
+        "Total": "Amount (GBP)",
+        "Merchant name": "Details",
+        "Merchant category": "Category"
+    },inplace=True)
+
     # Process the filtered data
     logging.info(f"Processing {len(df)} new transactions.")
-    print(df)
-
+    logging.debug(df)
 
 def process_revolut_csv(df):
     logging.info("Revolut CSV detected")
