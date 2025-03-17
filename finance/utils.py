@@ -50,7 +50,7 @@ def latest_entry(account: str):
 def latest_entry_file(file, account):
     with open(file, "r") as file:
         latest_date = file.read()
-        logging.info(f"Latest {account}Transaction Date: {latest_date}")
+        logging.info(f"{account} - Transactions From: {latest_date}")
     return latest_date
 
 
@@ -70,7 +70,7 @@ def file_setup():
             logging.info(f"File exists: {file}")
 
 
-def csv_to_excel(df, account):
+def csv_to_excel(df):
 
     # Expecting the df to have the following columns
     # Date, Amount (GBP), Details, Category, Type, Account, Balance, Effective Date
@@ -90,7 +90,33 @@ def csv_to_excel(df, account):
         raise ValueError(
             f"Unexpected columns in DataFrame. Expected: {expected_columns}, Found: {list(df.columns)}"
         )
-    
+
+    # Update Details with custom mappings
+    detail_mapping = {
+        "APPLE.COM/BILL": "Apple Storage 50gb",
+        "OPENAI *CHATGPT SUBSCR": "OpenAI Subscription",
+    }
+    df["Details"] = df["Details"].replace(detail_mapping)
+
+    # Update 'Category' with custom mappings
+    misc = "Misc / Unknown"
+    category_mapping = {
+        "eating_out": "Food & Eating Out",
+        "cash": misc,
+        "other": misc,
+        "HOTELS": "Holiday"
+    }
+    df["Category"] = df["Category"].replace(category_mapping).str.title()
+    df.loc[df["Category"].str.contains("Holiday", case=False, na=False), "Type"] = "Goals"
+
+    # Changing Category depending on the detail
+    details_to_category = {
+        "Apple Storage 50gb": "Work",
+        "OpenAI Subscription": "Work",
+    }
+    for keyword, category in details_to_category.items():
+        df.loc[df["Details"].str.contains(keyword, case=False, na=False), "Category"] = category
+
     # Check if Excel file exists else create one
     if not os.path.exists(EXCEL_FILE):
         df.to_excel(EXCEL_FILE, sheet_name=SHEET_NAME, index=False, engine="openpyxl")
