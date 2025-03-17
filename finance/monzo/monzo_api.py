@@ -53,11 +53,11 @@ def get_transactions(account_id, date_from):
             # Send the date to a text file, overriding previous date
             with open("files/monzo_last_transaction_date.txt", "w") as file:
                 file.write(f"{last_transaction_date}")
-                logging.info(f"Last transaction date saved: {last_transaction_date}")
+                logging.debug(f"Last transaction date saved: {last_transaction_date}")
         else:
-            logging.info("No transactions found.")
+            logging.warnig("No transactions found.")
 
-        logging.info("DONE 2/4  - Got transactions from Monzo API")
+        logging.debug("DONE 2/4  - Got transactions from Monzo API")
         return response.json()["transactions"]
 
     raise Exception("Failed to retrieve transactions.")
@@ -83,7 +83,7 @@ def transactions_to_dataframe(transactions):
         )
 
     if data:
-        logging.info("DONE 3/4 - Converted transactions to dataframe")
+        logging.debug("DONE 3/4 - Converted transactions to dataframe")
 
     return pd.DataFrame(data)
 
