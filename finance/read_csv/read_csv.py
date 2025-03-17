@@ -32,7 +32,7 @@ def run():
             continue
 
         # Process the file
-        logging.info(f"Processing file: {file_name}")
+        logging.debug(f"Processing file: {file_name}")
         df = pd.read_csv(file_path, header=None)
 
         if df.empty:
@@ -82,9 +82,9 @@ def process_trading212_csv(df):
         df = df[df["Time"] > start_date]  # Filter only new transactions
 
     if df.empty:
-        logging.info("No new transactions to process.")
+        logging.warning("No new transactions to process.")
         return
-    
+
     # Filter the df
     selected_columns = ["Action", "Time", "Total", "Merchant name", "Merchant category"]
     df = df[selected_columns]
@@ -105,7 +105,7 @@ def process_trading212_csv(df):
                     "Time": latest_cashback_time,  # Set to latest timestamp
                     "Total": total_cashback,
                     "Merchant name": None,
-                    "Merchant category": "Other"
+                    "Merchant category": "Other",
                 }
             ]
         )
@@ -123,17 +123,23 @@ def process_trading212_csv(df):
     )
 
     # Renaming Columns
-    df.rename(columns = {
-        "Action": "Type",
-        "Time": "Date",
-        "Total": "Amount (GBP)",
-        "Merchant name": "Details",
-        "Merchant category": "Category"
-    },inplace=True)
+    df.rename(
+        columns={
+            "Action": "Type",
+            "Time": "Date",
+            "Total": "Amount (GBP)",
+            "Merchant name": "Details",
+            "Merchant category": "Category",
+        },
+        inplace=True,
+    )
 
     # Process the filtered data
-    logging.info(f"Processing {len(df)} new transactions.")
+    logging.debug(f"Processing {len(df)} new transactions.")
     logging.debug(df)
 
+    return df
+
+
 def process_revolut_csv(df):
-    logging.info("Revolut CSV detected")
+    logging.debug("Revolut CSV detected")
