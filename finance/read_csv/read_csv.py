@@ -46,7 +46,8 @@ def run():
         match first_cell:
             # Trading 212 CSV
             case "Action":
-                process_trading212_csv(df)
+                df_filtered = process_trading212_csv(df)
+                utils.csv_to_excel(df_filtered, "trading212")
                 processed_items.append(file_name)
 
             # Revolut CSV
@@ -115,12 +116,8 @@ def process_trading212_csv(df):
     df["Account"] = "T212"
     df["Action"] = np.where(df["Total"].astype(float) < 0, "Expenses", "Income")
     df["Total"] = pd.to_numeric(df["Total"], errors="coerce").abs()
-    df["Balance"] = (
-        '=SUMPRODUCT([Amount],--([Date]<=[@Date]), (([Type]="Expenses") + ([Type]="Savings")) * (-1) + ([Type] = "Income"))'
-    )
-    df["Effective Date"] = (
-        '=IF(AND([@Type]="Income", shift_income_status = "Active", DAY([@Date])>=shift_income_starting_date),DATE(YEAR([@Date]),MONTH([@Date])+1,1),([@Date]))'
-    )
+    df["Balance"] = None
+    df["Effective Date"] = None
 
     # Renaming Columns
     df.rename(
