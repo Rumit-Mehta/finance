@@ -47,12 +47,14 @@ def run():
             # Trading 212 CSV
             case "Action":
                 df_filtered = process_trading212_csv(df)
-                utils.csv_to_excel(df_filtered, "trading212")
-                processed_items.append(file_name)
+                if df_filtered is not None:
+                    utils.csv_to_excel(df_filtered)
+                    __update_latest_date(df_filtered, "trading212")
+                    processed_items.append(file_name)
 
             # Revolut CSV
             case "Type":
-                process_revolut_csv(df)
+                df_filtered = process_revolut_csv(df)
                 processed_items.append(file_name)
 
             # Default case
@@ -105,7 +107,7 @@ def process_trading212_csv(df):
                     "Action": "Spending cashback",
                     "Time": latest_cashback_time,  # Set to latest timestamp
                     "Total": total_cashback,
-                    "Merchant name": None,
+                    "Merchant name": "Cashback",
                     "Merchant category": "Other",
                 }
             ]
@@ -140,3 +142,16 @@ def process_trading212_csv(df):
 
 def process_revolut_csv(df):
     logging.debug("Revolut CSV detected")
+
+
+# Update the latest dates in the text files for each account
+def __update_latest_date(df, account_name):
+     # Extract the latest timestamp and write it to a file
+    if not df.empty:
+        latest_timestamp = df["Date"].max()
+        latest_timestamp_str = latest_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+        with open(f"files/{account_name}_last_transaction_date.txt", "w") as f:
+            f.write(latest_timestamp_str)
+
+        logging.info(f"Latest timestamp {latest_timestamp_str} written to {account_name}_last_transaction_date.txt")
