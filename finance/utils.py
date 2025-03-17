@@ -46,10 +46,10 @@ def latest_entry(account: str):
     return latest_date
 
 
-def latest_entry_file(file):
+def latest_entry_file(file, account):
     with open(file, "r") as file:
         latest_date = file.read()
-        logging.info(f"Latest Transaction Date: {latest_date}")
+        logging.info(f"Latest {account}Transaction Date: {latest_date}")
     return latest_date
 
 

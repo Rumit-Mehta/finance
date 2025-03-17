@@ -67,7 +67,7 @@ def run():
 
 def process_trading212_csv(df):
     # Get the date of the last transaction
-    start_date = utils.latest_entry_file(T212_DATE_FILE)
+    start_date = utils.latest_entry_file(T212_DATE_FILE, "Trading 212")
 
     # Convert the date column to datetime and filter the DataFrame
     df.columns = df.iloc[0]  # Set first row as header
