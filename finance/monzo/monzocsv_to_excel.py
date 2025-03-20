@@ -12,11 +12,13 @@ CSV_FILE = constants.MONZO_CSV_FILE
 EXCEL_FILE = constants.EXCEL_FILE
 SHEET_NAME = constants.SHEET_NAME
 
-
-# Function to append CSV data to the end of an existing table in Excel
+# TODO: Refactor def to use utils.csv_to_excel instead
 def append_csv_to_excel(
     csv_file=CSV_FILE, excel_file=EXCEL_FILE, sheet_name=SHEET_NAME
 ):
+    """
+    Append Monzo CSV data to an Excel file.
+    """
 
     # Ensure the monzo folder exists
     os.makedirs("monzo", exist_ok=True)
