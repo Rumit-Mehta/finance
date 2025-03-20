@@ -48,6 +48,7 @@ def latest_entry(account: str):
 
 
 def latest_entry_file(file, account):
+    """Account used only for logging purposes"""
     with open(file, "r") as file:
         latest_date = file.read()
         logging.info(f"{account} - Transactions From: {latest_date}")
@@ -55,7 +56,7 @@ def latest_entry_file(file, account):
 
 
 def file_setup():
-
+    # TODO: make this more dynamic instead of hardcoding the file paths
     required_files = [
         "files/monzo_last_transaction_date.txt",
         "files/trading212_last_transaction_date.txt",
@@ -115,6 +116,8 @@ def csv_to_excel(df):
     details_to_category = {
         "Apple Storage 50gb": "Work",
         "OpenAI Subscription": "Work",
+        "g2a.com": "Entertainment",
+        "Goa Miles": "Transport",
     }
     for keyword, category in details_to_category.items():
         df.loc[

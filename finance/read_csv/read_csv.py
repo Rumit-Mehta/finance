@@ -47,15 +47,18 @@ def run():
             # Trading 212 CSV
             case "Action":
                 df_filtered = process_trading212_csv(df)
+                processed_items.append(file_name)
                 if df_filtered is not None:
                     utils.csv_to_excel(df_filtered)
                     __update_latest_date(df_filtered, "trading212")
-                    processed_items.append(file_name)
 
             # Revolut CSV
             case "Type":
                 df_filtered = process_revolut_csv(df)
                 processed_items.append(file_name)
+                if df_filtered is not None:
+                    utils.csv_to_excel(df_filtered)
+                    __update_latest_date(df_filtered, "revolut")
 
             # Default case
             case _:
@@ -142,6 +145,53 @@ def process_trading212_csv(df):
 
 def process_revolut_csv(df):
     logging.debug("Revolut CSV detected")
+
+    # Get the date of the last transaction
+    start_date = utils.latest_entry_file(REV_DATE_FILE, "Revolut")
+
+    # Convert the date column to datetime and filter the DataFrame
+    df.columns = df.iloc[0]  # Set first row as header
+    df = df[1:].reset_index(drop=True)  # Remove header row from data
+
+    if "Started Date" in df.columns:
+        df["Started Date"] = pd.to_datetime(df["Started Date"], errors="coerce")
+
+    if start_date:
+        start_date = pd.to_datetime(start_date, errors="coerce")
+        df = df[df["Started Date"] > start_date]  # Filter only new transactions
+
+    if df.empty:
+        logging.warning("No new transactions to process.")
+        return
+
+    # Filtering the df
+    selected_columns = ["Type", "Started Date", "Amount", "Description"]
+    df = df[selected_columns]
+    df = df[df["Type"] != "TRANSFER"]  # Remove 'Transfer' rows
+
+    # Initialising new columns
+    df["Account"] = "Revolut"
+    df["Type"] = np.where(df["Amount"].astype(float) < 0, "Expenses", "Income")
+    df["Amount"] = pd.to_numeric(df["Amount"], errors="coerce").abs()
+    df["Balance"] = None
+    df["Effective Date"] = None
+    df["Category"] = None
+
+    # Renaming Columns
+    df.rename(
+        columns={
+            "Started Date": "Date",
+            "Amount": "Amount (GBP)",
+            "Description": "Details",
+        },
+        inplace=True,
+    )
+
+    # Process the filtered data
+    logging.debug(f"Processing {len(df)} new transactions.")
+    logging.debug(df)
+
+    return df
 
 
 # Update the latest dates in the text files for each account
