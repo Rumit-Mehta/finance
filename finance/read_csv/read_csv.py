@@ -146,7 +146,7 @@ def process_revolut_csv(df):
 
 # Update the latest dates in the text files for each account
 def __update_latest_date(df, account_name):
-     # Extract the latest timestamp and write it to a file
+    # Extract the latest timestamp and write it to a file
     if not df.empty:
         latest_timestamp = df["Date"].max()
         latest_timestamp_str = latest_timestamp.strftime("%Y-%m-%d %H:%M:%S")
@@ -154,4 +154,6 @@ def __update_latest_date(df, account_name):
         with open(f"files/{account_name}_last_transaction_date.txt", "w") as f:
             f.write(latest_timestamp_str)
 
-        logging.info(f"Latest timestamp {latest_timestamp_str} written to {account_name}_last_transaction_date.txt")
+        logging.info(
+            f"Latest timestamp {latest_timestamp_str} written to {account_name}_last_transaction_date.txt"
+        )

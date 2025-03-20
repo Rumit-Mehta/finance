@@ -104,10 +104,12 @@ def csv_to_excel(df):
         "eating_out": "Food & Eating Out",
         "cash": misc,
         "other": misc,
-        "HOTELS": "Holiday"
+        "HOTELS": "Holiday",
     }
     df["Category"] = df["Category"].replace(category_mapping).str.title()
-    df.loc[df["Category"].str.contains("Holiday", case=False, na=False), "Type"] = "Goals"
+    df.loc[df["Category"].str.contains("Holiday", case=False, na=False), "Type"] = (
+        "Goals"
+    )
 
     # Changing Category depending on the detail
     details_to_category = {
@@ -115,7 +117,9 @@ def csv_to_excel(df):
         "OpenAI Subscription": "Work",
     }
     for keyword, category in details_to_category.items():
-        df.loc[df["Details"].str.contains(keyword, case=False, na=False), "Category"] = category
+        df.loc[
+            df["Details"].str.contains(keyword, case=False, na=False), "Category"
+        ] = category
 
     # Check if Excel file exists else create one
     if not os.path.exists(EXCEL_FILE):
