@@ -10,6 +10,7 @@ from openpyxl.styles import Font, Alignment
 INPUT_FOLDER = constants.INPUT_FILE_PATH
 T212_DATE_FILE = constants.TRADING212_LAST_TRANSACTION
 REV_DATE_FILE = constants.REVOLUT_LAST_TRANSACTION
+MONZO_DATE_FILE = constants.MONZO_LAST_TRANSACTION
 
 
 def run():
@@ -32,9 +33,19 @@ def run():
             continue
 
         # Process the file
-        logging.debug(f"Processing file: {file_name}")
+        logging.info(f"Processing file: {file_name}")
+
+        # Check if the file is empty
+        if os.path.getsize(file_path) == 0:
+            logging.warning(f"File {file_name} is empty")
+            unprocessed_items.append(file_name)
+            continue
+
+        print("file has something in it")
+        # Read the csv file
         df = pd.read_csv(file_path, header=None)
 
+        # Check if the DataFrame is empty
         if df.empty:
             logging.warning(f"File {file_name} is empty")
             unprocessed_items.append(file_name)
@@ -59,6 +70,14 @@ def run():
                 if df_filtered is not None:
                     utils.csv_to_excel(df_filtered)
                     __update_latest_date(df_filtered, "revolut")
+
+            # Monzo CSV
+            case "Date":
+                df_filtered = process_monzo_csv(df)
+                processed_items.append(file_name)
+                if df_filtered is not None:
+                    utils.csv_to_excel(df_filtered)
+                    __update_latest_date(df_filtered, "monzo")
 
             # Default case
             case _:
@@ -194,14 +213,60 @@ def process_revolut_csv(df):
     return df
 
 
+def process_monzo_csv(df):
+    logging.debug("Monzo CSV detected")
+
+    # Get the date of the last transaction
+    start_date = utils.latest_entry_file(MONZO_DATE_FILE, "Monzo")
+
+    # Convert the date column to datetime and filter the DataFrame
+    df.columns = df.iloc[0]  # Set first row as header
+    df = df[1:].reset_index(drop=True)  # Remove header row from data
+
+    if "Date" in df.columns:
+        df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+    
+    # if start_date:
+    #     start_date = pd.to_datetime(start_date, errors="coerce")
+    #     df = df[df["Date"] > start_date] # Filter only new transactions
+
+    if df.empty:
+        logging.warning("No new transactions to process.")
+        return
+
+    # Filtering the df 
+    selected_columns = ["Date", "Amount (GBP)", "Merchant", "Category"]
+    df = df[selected_columns]
+
+    # Initialising new columns
+    df["Type"] = np.where(df["Amount (GBP)"].astype(float) < 0, "Expenses", "Income")
+    df["Amount (GBP)"] = pd.to_numeric(df["Amount (GBP)"], errors="coerce").abs()
+    df["Account"] = "Monzo"
+    df["Balance"] = None
+    df["Effective Date"] = None
+
+    # Renaming Columns
+    df.rename(
+        columns={
+            "Merchant": "Details",
+        },
+        inplace=True,
+    )
+
+    # Process the filtered data
+    logging.debug(f"Processing {len(df)} new transactions.")
+    logging.debug(df)
+
+    return df
+
 # Update the latest dates in the text files for each account
 def __update_latest_date(df, account_name):
     # Extract the latest timestamp and write it to a file
     if not df.empty:
-        latest_timestamp = df["Date"].max()
-        latest_timestamp_str = latest_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        latest_timestamp = df["Date"].max() + pd.Timedelta(seconds=1)
+        latest_timestamp_str = latest_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        with open(f"files/{account_name}_last_transaction_date.txt", "w") as f:
+        with open(f"files/last-transactions/{account_name}_last_transaction_date.txt", "w") as f:
             f.write(latest_timestamp_str)
 
         logging.info(
