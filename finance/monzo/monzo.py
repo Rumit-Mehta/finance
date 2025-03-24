@@ -11,4 +11,3 @@ def run():
     )
     df = monzo_api.transactions_to_dataframe(transactions)
     monzo_api.save_to_csv(df)
-

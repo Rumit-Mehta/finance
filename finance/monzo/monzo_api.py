@@ -1,3 +1,4 @@
+import time
 import requests
 import logging
 import pandas as pd
@@ -32,7 +33,6 @@ def get_transactions(account_id, date_from):
     ACCESS_TOKEN = load_access_token()
     url = f"https://api.monzo.com/transactions"
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
-    print(f"Date from: {date_from}")
     params = {
         "account_id": account_id,
         "expand[]": "merchant",  # Expands merchant info if available
@@ -41,7 +41,6 @@ def get_transactions(account_id, date_from):
     }
 
     response = requests.get(url, headers=headers, params=params)
-    print(f"params: {params}")
 
     if response.status_code == 200:
         transactions = response.json()["transactions"]
@@ -50,15 +49,16 @@ def get_transactions(account_id, date_from):
         if transactions:
             # Get the date of the last transaction (assuming the list is in chronological order)
             last_transaction_date = transactions[-1]["created"]
-
+            logging.info(f"DONE 2/4  - Fetched transactions from {date_from}")
             # Send the date to a text file, overriding previous date
-            with open("files/last-transactions/monzo_last_transaction_date.txt", "w") as file:
+            with open(
+                "files/last-transactions/monzo_last_transaction_date.txt", "w"
+            ) as file:
                 file.write(f"{last_transaction_date}")
                 logging.debug(f"Last transaction date saved: {last_transaction_date}")
         else:
             logging.warning("No transactions found.")
 
-        logging.debug("DONE 2/4  - Got transactions from Monzo API")
         return response.json()["transactions"]
 
     raise Exception("Failed to retrieve transactions.")
@@ -84,13 +84,20 @@ def transactions_to_dataframe(transactions):
         )
 
     if data:
-        logging.debug("DONE 3/4 - Converted transactions to dataframe")
+        logging.info("DONE 3/4 - Converted transactions to dataframe")
 
     return pd.DataFrame(data)
 
 
 # Save DataFrame to CSV
 def save_to_csv(df, filename="files/input-files/monzo_transactions.csv"):
-    '''Save the DataFrame to a CSV file if the DataFrame is not empty'''
-    logging.warning("No transactions to save.") if df.empty else df.to_csv(filename, index=False)
-   
+    """Save the DataFrame to a CSV file if the DataFrame is not empty"""
+    if df.empty:
+        logging.warning("No transactions to save.")
+        open(filename, "w").close()
+    else:
+        logging.info("DONE 4/4 - Saved transactions to CSV")
+        df.to_csv(filename, index=False)
+
+    # wait for 5 seconds
+    time.sleep(5)

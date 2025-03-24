@@ -10,4 +10,4 @@ auth:
 run:
 	@osascript -e 'if application "Microsoft Excel" is running then tell application "Microsoft Excel" to if (count of workbooks) > 0 then close active workbook without saving'
 	@python3 app.py
-	@open files/finance_master_sheet_test.xlsx
+	@open files/finance_master_sheet.xlsx

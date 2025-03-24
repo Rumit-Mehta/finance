@@ -4,17 +4,15 @@ from finance import constants
 import xlwings as xw
 
 
-
 EXCEL_FILE = constants.EXCEL_FILE
 SHEET_NAME = constants.SHEET_NAME
 
 
 def latest_entry_file(file, account):
     """Account used only for logging purposes"""
-    print(file)
     with open(file, "r") as file:
         latest_date = file.read()
-        logging.info(f"{account} - Transactions From: {latest_date}")
+        logging.debug(f"{account} - Transactions From: {latest_date}")
     return latest_date
 
 
@@ -68,6 +66,7 @@ def csv_to_excel(df):
         "cash": misc,
         "other": misc,
         "HOTELS": "Holiday",
+        "Holidays": "Holiday",
     }
     df["Category"] = df["Category"].replace(category_mapping).str.title()
     df.loc[df["Category"].str.contains("Holiday", case=False, na=False), "Type"] = (

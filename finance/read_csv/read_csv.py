@@ -41,7 +41,6 @@ def run():
             unprocessed_items.append(file_name)
             continue
 
-        print("file has something in it")
         # Read the csv file
         df = pd.read_csv(file_path, header=None)
 
@@ -92,7 +91,11 @@ def run():
 
 def process_trading212_csv(df):
     # Get the date of the last transaction
-    start_date = utils.latest_entry_file(T212_DATE_FILE, "Trading 212")
+    start_date = (
+        utils.latest_entry_file(T212_DATE_FILE, "Monzo")
+        .replace("T", " ")
+        .replace("Z", "")
+    )
 
     # Convert the date column to datetime and filter the DataFrame
     df.columns = df.iloc[0]  # Set first row as header
@@ -166,7 +169,11 @@ def process_revolut_csv(df):
     logging.debug("Revolut CSV detected")
 
     # Get the date of the last transaction
-    start_date = utils.latest_entry_file(REV_DATE_FILE, "Revolut")
+    start_date = (
+        utils.latest_entry_file(REV_DATE_FILE, "Monzo")
+        .replace("T", " ")
+        .replace("Z", "")
+    )
 
     # Convert the date column to datetime and filter the DataFrame
     df.columns = df.iloc[0]  # Set first row as header
@@ -225,16 +232,12 @@ def process_monzo_csv(df):
 
     if "Date" in df.columns:
         df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-    
-    # if start_date:
-    #     start_date = pd.to_datetime(start_date, errors="coerce")
-    #     df = df[df["Date"] > start_date] # Filter only new transactions
 
     if df.empty:
         logging.warning("No new transactions to process.")
         return
 
-    # Filtering the df 
+    # Filtering the df
     selected_columns = ["Date", "Amount (GBP)", "Merchant", "Category"]
     df = df[selected_columns]
 
@@ -259,6 +262,7 @@ def process_monzo_csv(df):
 
     return df
 
+
 # Update the latest dates in the text files for each account
 def __update_latest_date(df, account_name):
     # Extract the latest timestamp and write it to a file
@@ -266,7 +270,9 @@ def __update_latest_date(df, account_name):
         latest_timestamp = df["Date"].max() + pd.Timedelta(seconds=1)
         latest_timestamp_str = latest_timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        with open(f"files/last-transactions/{account_name}_last_transaction_date.txt", "w") as f:
+        with open(
+            f"files/last-transactions/{account_name}_last_transaction_date.txt", "w"
+        ) as f:
             f.write(latest_timestamp_str)
 
         logging.info(
