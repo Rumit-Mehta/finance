@@ -1,14 +1,15 @@
 import logging
 import os
-import finance.constants as con
+from finance import constants
 import files
+import xlwings as xw
 from openpyxl import load_workbook
 from openpyxl.styles import Font, Alignment
 from datetime import timedelta
 
 
-EXCEL_FILE = con.EXCEL_FILE
-SHEET_NAME = con.SHEET_NAME
+EXCEL_FILE = constants.EXCEL_FILE
+SHEET_NAME = constants.SHEET_NAME
 
 
 # get the date for the last entry for a spefific account eg. monzo, amex etc
@@ -92,14 +93,13 @@ def csv_to_excel(df):
             f"Unexpected columns in DataFrame. Expected: {expected_columns}, Found: {list(df.columns)}"
         )
 
-    # Update Details with custom mappings
+    # Apply detail and category mappings
     detail_mapping = {
         "APPLE.COM/BILL": "Apple Storage 50gb",
         "OPENAI *CHATGPT SUBSCR": "OpenAI Subscription",
     }
     df["Details"] = df["Details"].replace(detail_mapping)
 
-    # Update 'Category' with custom mappings
     misc = "Misc / Unknown"
     category_mapping = {
         "eating_out": "Food & Eating Out",
@@ -124,86 +124,40 @@ def csv_to_excel(df):
             df["Details"].str.contains(keyword, case=False, na=False), "Category"
         ] = category
 
-    # Check if Excel file exists else create one
+    # If Excel file doesn't exist, create it
     if not os.path.exists(EXCEL_FILE):
-        df.to_excel(EXCEL_FILE, sheet_name=SHEET_NAME, index=False, engine="openpyxl")
+        df.to_excel(EXCEL_FILE, sheet_name=SHEET_NAME, index=False)
         print(f"Created new Excel file: {EXCEL_FILE}")
         return
 
-    # Load existing workbook and find the last row
-    workbook = load_workbook(EXCEL_FILE)
-    sheet = workbook[SHEET_NAME]
+    app = xw.App(visible=False)
+    try:
+        wb = xw.Book(EXCEL_FILE)
+        sheet = wb.sheets[SHEET_NAME]
 
-    # Get the table
-    table = sheet.tables["Tracking"]
+        # Find the last used row
+        last_row = sheet.range("C" + str(sheet.cells.last_cell.row)).end("up").row
 
-    # Get the current table range
-    start_cell, end_cell = table.ref.split(":")
-    start_col_letter = start_cell[0]
-    end_col_letter = end_cell[0]
-    end_row = int(end_cell[1:])
+        for i, row in df.iterrows():
+            new_row = last_row + 1 + i
 
-    # Table Formatting
-    font_style = Font(size=10)
-    indent_style = Alignment(indent=1)
-    indent_style_small = Alignment(indent=0.5)
-    indent_style_left = Alignment(indent=1, horizontal="left")
+            sheet.range(f"C{new_row}").value = row["Date"]
+            sheet.range(f"C{new_row}").number_format = "DD-MMM-YY"
+            sheet.range(f"D{new_row}").value = row["Type"]
+            sheet.range(f"E{new_row}").value = row["Category"]
+            sheet.range(f"F{new_row}").value = row["Amount (GBP)"]
+            sheet.range(f"G{new_row}").value = row["Details"]
 
-    # Loop through all rows in df and add each to the table
-    for i, (_, row) in enumerate(df.iterrows()):
-        new_row_index = end_row + 1 + i
+            balance_formula = f'=SUMPRODUCT([Amount],--([Date]<=C{new_row}), (([Type]="Expenses") + ([Type]="Savings")) * (-1) + ([Type] = "Income"))'
+            sheet.range(f"H{new_row}").value = balance_formula
 
-        # Column C (Date)
-        cell = sheet.cell(row=new_row_index, column=3, value=row["Date"])
-        cell.font = font_style
-        cell.alignment = indent_style_left
-        cell.number_format = "DD-MMM-YY"  # This applies the date format in Excel
+            sheet.range(f"I{new_row}").value = row["Account"]
 
-        # Column D (Type)
-        cell = sheet.cell(row=new_row_index, column=4, value=row["Type"])
-        cell.font = font_style
+            effective_date_formula = f'=IF(AND(D{new_row}="Income", shift_income_status = "Active", DAY(C{new_row})>=shift_income_starting_date),DATE(YEAR(C{new_row}),MONTH(C{new_row})+1,1),(C{new_row}))'
+            sheet.range(f"J{new_row}").value = effective_date_formula
 
-        # Column E (Category)
-        cell = sheet.cell(row=new_row_index, column=5, value=row["Category"])
-        cell.font = font_style
-        cell.alignment = indent_style
-
-        # Column F (Amount)
-        cell = sheet.cell(row=new_row_index, column=6, value=row["Amount (GBP)"])
-        cell.font = font_style
-        cell.alignment = indent_style_left
-
-        # Column G (Details)
-        cell = sheet.cell(row=new_row_index, column=7, value=row["Details"])
-        cell.font = font_style
-        cell.alignment = indent_style
-
-        # Column H (Balance)
-        row["Balance"] = (
-            f'=SUMPRODUCT([Amount],--([Date]<=C{new_row_index}), (([Type]="Expenses") + ([Type]="Savings")) * (-1) + ([Type] = "Income"))'
-        )
-        cell = sheet.cell(row=new_row_index, column=8, value=row["Balance"])
-        cell.font = font_style
-        cell.alignment = indent_style
-
-        # Column I (Account)
-        cell = sheet.cell(row=new_row_index, column=9, value=row["Account"])
-        cell.font = font_style
-        cell.alignment = indent_style
-
-        # Column J (Effective Date)
-        row["Effective Date"] = (
-            f'=IF(AND(D{new_row_index}="Income", shift_income_status = "Active", DAY(C{new_row_index})>=shift_income_starting_date),DATE(YEAR(C{new_row_index}),MONTH(C{new_row_index})+1,1),(C{new_row_index}))'
-        )
-        cell = sheet.cell(row=new_row_index, column=10, value=row["Effective Date"])
-        cell.font = font_style
-        cell.alignment = indent_style
-
-    # Update the table's range to include all new rows
-    total_new_rows = len(df)
-    new_end_row = end_row + total_new_rows
-    table.ref = f"{start_col_letter}{start_cell[1:]}:{end_col_letter}{new_end_row}"
-    logging.info(f"Data successfully appended to {EXCEL_FILE} at row {end_row}")
-
-    # Save the workbook
-    workbook.save(EXCEL_FILE)
+        wb.save()
+        logging.info(f"Data successfully appended to {EXCEL_FILE} at row {last_row}")
+    finally:
+        wb.close()
+        app.quit()

@@ -5,3 +5,4 @@ openpyxl
 flask
 flask-session
 black
+xlwings
