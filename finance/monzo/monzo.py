@@ -1,4 +1,4 @@
-from finance.monzo import monzo_api, monzocsv_to_excel, monzo_auth
+from finance.monzo import monzo_api
 from finance import utils
 from finance import constants
 
@@ -12,5 +12,3 @@ def run():
     df = monzo_api.transactions_to_dataframe(transactions)
     monzo_api.save_to_csv(df)
 
-    # # csv to xls
-    monzocsv_to_excel.append_csv_to_excel()
