@@ -37,6 +37,7 @@ def get_transactions(account_id, date_from):
         "account_id": account_id,
         "expand[]": "merchant",  # Expands merchant info if available
         "since": str(date_from),
+        "limit": 100,  # Max number of transactions to fetch
     }
 
     response = requests.get(url, headers=headers, params=params)
@@ -51,11 +52,11 @@ def get_transactions(account_id, date_from):
             last_transaction_date = transactions[-1]["created"]
 
             # Send the date to a text file, overriding previous date
-            with open("files/monzo_last_transaction_date.txt", "w") as file:
+            with open("files/last-transactions/monzo_last_transaction_date.txt", "w") as file:
                 file.write(f"{last_transaction_date}")
                 logging.debug(f"Last transaction date saved: {last_transaction_date}")
         else:
-            logging.warnig("No transactions found.")
+            logging.warning("No transactions found.")
 
         logging.debug("DONE 2/4  - Got transactions from Monzo API")
         return response.json()["transactions"]
@@ -69,7 +70,7 @@ def transactions_to_dataframe(transactions):
     for txn in transactions:
         data.append(
             {
-                "Date": txn["created"].split("T")[0],  # removing the time from the date
+                "Date": txn["created"],
                 "Amount (GBP)": txn["amount"] / 100,  # Monzo amounts are in pence
                 "Description": txn.get("description", ""),
                 "Merchant": (
@@ -89,6 +90,7 @@ def transactions_to_dataframe(transactions):
 
 
 # Save DataFrame to CSV
-def save_to_csv(df, filename="files/monzo_transactions.csv"):
-    df.to_csv(filename, index=False)
-    logging.info(f"DONE 4/4 - Transactions saved to {filename}")
+def save_to_csv(df, filename="files/input-files/monzo_transactions.csv"):
+    '''Save the DataFrame to a CSV file if the DataFrame is not empty'''
+    logging.warning("No transactions to save.") if df.empty else df.to_csv(filename, index=False)
+   
