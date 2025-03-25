@@ -1,19 +1,14 @@
-import time
 import requests
 import logging
 import pandas as pd
 
+# Set up logging
 logger = logging.getLogger(__name__)
-
-
-def load_access_token():
-    with open("files/monzo_access_token.txt", "r") as file:
-        return file.read().strip()
 
 
 # Fetch account ID
 def get_account_id():
-    ACCESS_TOKEN = load_access_token()
+    ACCESS_TOKEN = __load_access_token()
     url = "https://api.monzo.com/accounts"
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
     response = requests.get(url, headers=headers)
@@ -30,8 +25,8 @@ def get_account_id():
 
 # Fetch transactions
 def get_transactions(account_id, date_from):
-    ACCESS_TOKEN = load_access_token()
-    url = f"https://api.monzo.com/transactions"
+    ACCESS_TOKEN = __load_access_token()
+    url = "https://api.monzo.com/transactions"
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
     params = {
         "account_id": account_id,
@@ -62,6 +57,27 @@ def get_transactions(account_id, date_from):
         return response.json()["transactions"]
 
     raise Exception("Failed to retrieve transactions.")
+
+
+# Fetch pots and filter out relevant information
+def get_pots(account_id):
+    dict = {}
+    ACCESS_TOKEN = __load_access_token()
+
+    url = "https://api.monzo.com/pots"
+    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+    params = {"current_account_id": account_id}
+
+    response = requests.get(url, headers=headers, params=params)
+    if response.status_code in [200, 201, 204]:
+        pots = response.json()["pots"]
+        for pot in pots:
+            key = pot["name"]
+            value = pot["balance"] / 100  # Monzo amounts are in pence
+            dict[key] = value
+        return dict
+    else:
+        raise Exception("Failed to retrieve pots.")
 
 
 # Convert transactions to a DataFrame
@@ -99,5 +115,8 @@ def save_to_csv(df, filename="files/input-files/monzo_transactions.csv"):
         logging.info("DONE 4/4 - Saved transactions to CSV")
         df.to_csv(filename, index=False)
 
-    # wait for 5 seconds
-    time.sleep(5)
+
+# Load access token from file
+def __load_access_token():
+    with open("files/monzo_access_token.txt", "r") as file:
+        return file.read().strip()

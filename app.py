@@ -10,13 +10,17 @@ logging.basicConfig(
 
 def main():
 
-    # Get Monzo transactions from API and append to Excel
+    # Get Monzo transactions from API
     monzo.run()
 
-    # Get CSV data from other banks and append to Excel
+    # Get CSV data from all the banks and append to Excel
     read_csv.run()
+
+
+def test():
+    monzo.test()
 
 
 if __name__ == "__main__":
     main()
-    print("- - DONE - -")
+    print("- - FINISHED - -")

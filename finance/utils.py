@@ -6,6 +6,7 @@ import xlwings as xw
 
 EXCEL_FILE = constants.EXCEL_FILE
 SHEET_NAME = constants.SHEET_NAME
+CALC_SHEET = constants.CALC_SHEET
 
 
 def latest_entry_file(file, account):
@@ -122,3 +123,42 @@ def csv_to_excel(df):
     finally:
         wb.close()
         app.quit()
+
+
+def pots_to_excel(pots: dict):
+    '''Write a dictionary to Excel - used for Monzo pots data specifically'''
+    # region - format dict
+    # Sort the pots by value in descending order
+    sorted_pots = dict(sorted(pots.items(), key=lambda item: item[1], reverse=True))
+
+    # If more than 6 pots, aggregate 6 onwards into "Others"
+    if len(sorted_pots) > 6:
+        logging.info("More than 6 pots found. Extras will be aggregated into Others") 
+        for key, value in list(sorted_pots.items())[5:]:
+            sorted_pots["Others"] = sorted_pots.get("Others", 0) + value
+            del sorted_pots[key]
+
+    logging.debug(f"Sorted Pots: {sorted_pots}")
+    # endregion
+
+    # region - Write to Excel
+    app = xw.App(visible=False)
+    try:
+        wb = xw.Book(EXCEL_FILE)
+        sheet = wb.sheets[CALC_SHEET]
+
+        # Start adding data from I19
+        start_cell = sheet.range("I19")
+        row_offset = 0
+        for key, value in sorted_pots.items():
+            row = start_cell.row + row_offset
+            sheet.range(f"I{row}").value = key
+            sheet.range(f"J{row}").value = value
+            row_offset += 1
+
+        wb.save()
+        logging.info(f"Data successfully appended to {EXCEL_FILE} at row {start_cell.row}")
+    finally:
+        wb.close()
+        app.quit()
+    # endregion
