@@ -1,17 +1,26 @@
-from finance import constants
+from finance import constants, utils
 from finance.monzo import monzo
+from finance.read_csv import read_csv
 import logging
 
 logging.basicConfig(
-    level=constants.LOGGING_LEVEL, format="%(asctime)s -  %(levelname)s - %(message)s"
+    level=constants.LOGGING_LEVEL, format="%(levelname)s: %(asctime)s - %(message)s"
 )
 
 
 def main():
-    # Get Monzo transactions and add to spreadsheet
+
+    # Get Monzo transactions from API
     monzo.run()
+
+    # Get CSV data from all the banks and append to Excel
+    read_csv.run()
+
+
+def test():
+    monzo.test()
 
 
 if __name__ == "__main__":
     main()
-    print("- - DONE - -")
+    print("- - FINISHED - -")

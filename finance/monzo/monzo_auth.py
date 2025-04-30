@@ -13,6 +13,7 @@ CLIENT_ID = constants.MONZO_CLIENT_ID
 CLIENT_SECRET = constants.MONZO_CLIENT_SECRET
 REDIRECT_URI = "http://localhost:5001/callback"
 
+
 @app.route("/")
 def authorize():
     state = secrets.token_urlsafe(32)

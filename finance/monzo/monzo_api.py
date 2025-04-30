@@ -2,17 +2,13 @@ import requests
 import logging
 import pandas as pd
 
+# Set up logging
 logger = logging.getLogger(__name__)
-
-
-def load_access_token():
-    with open("files/monzo_access_token.txt", "r") as file:
-        return file.read().strip()
 
 
 # Fetch account ID
 def get_account_id():
-    ACCESS_TOKEN = load_access_token()
+    ACCESS_TOKEN = __load_access_token()
     url = "https://api.monzo.com/accounts"
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
     response = requests.get(url, headers=headers)
@@ -29,18 +25,17 @@ def get_account_id():
 
 # Fetch transactions
 def get_transactions(account_id, date_from):
-    ACCESS_TOKEN = load_access_token()
-    url = f"https://api.monzo.com/transactions"
+    ACCESS_TOKEN = __load_access_token()
+    url = "https://api.monzo.com/transactions"
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
-    print(f"Date from: {date_from}")
     params = {
         "account_id": account_id,
         "expand[]": "merchant",  # Expands merchant info if available
         "since": str(date_from),
+        "limit": 100,  # Max number of transactions to fetch
     }
 
     response = requests.get(url, headers=headers, params=params)
-    print(f"params: {params}")
 
     if response.status_code == 200:
         transactions = response.json()["transactions"]
@@ -49,18 +44,40 @@ def get_transactions(account_id, date_from):
         if transactions:
             # Get the date of the last transaction (assuming the list is in chronological order)
             last_transaction_date = transactions[-1]["created"]
-
+            logging.info(f"DONE 2/4  - Fetched transactions from {date_from}")
             # Send the date to a text file, overriding previous date
-            with open("files/monzo_last_transaction_date.txt", "w") as file:
+            with open(
+                "files/last-transactions/monzo_last_transaction_date.txt", "w"
+            ) as file:
                 file.write(f"{last_transaction_date}")
-                logging.info(f"Last transaction date saved: {last_transaction_date}")
+                logging.debug(f"Last transaction date saved: {last_transaction_date}")
         else:
-            logging.info("No transactions found.")
+            logging.warning("No transactions found.")
 
-        logging.info("DONE 2/4  - Got transactions from Monzo API")
         return response.json()["transactions"]
 
     raise Exception("Failed to retrieve transactions.")
+
+
+# Fetch pots and filter out relevant information
+def get_pots(account_id):
+    dict = {}
+    ACCESS_TOKEN = __load_access_token()
+
+    url = "https://api.monzo.com/pots"
+    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+    params = {"current_account_id": account_id}
+
+    response = requests.get(url, headers=headers, params=params)
+    if response.status_code in [200, 201, 204]:
+        pots = response.json()["pots"]
+        for pot in pots:
+            key = pot["name"]
+            value = pot["balance"] / 100  # Monzo amounts are in pence
+            dict[key] = value
+        return dict
+    else:
+        raise Exception("Failed to retrieve pots.")
 
 
 # Convert transactions to a DataFrame
@@ -69,7 +86,7 @@ def transactions_to_dataframe(transactions):
     for txn in transactions:
         data.append(
             {
-                "Date": txn["created"].split("T")[0],  # removing the time from the date
+                "Date": txn["created"],
                 "Amount (GBP)": txn["amount"] / 100,  # Monzo amounts are in pence
                 "Description": txn.get("description", ""),
                 "Merchant": (
@@ -89,6 +106,17 @@ def transactions_to_dataframe(transactions):
 
 
 # Save DataFrame to CSV
-def save_to_csv(df, filename="files/monzo_transactions.csv"):
-    df.to_csv(filename, index=False)
-    logging.info(f"DONE 4/4 - Transactions saved to {filename}")
+def save_to_csv(df, filename="files/input-files/monzo_transactions.csv"):
+    """Save the DataFrame to a CSV file if the DataFrame is not empty"""
+    if df.empty:
+        logging.warning("No transactions to save.")
+        open(filename, "w").close()
+    else:
+        logging.info("DONE 4/4 - Saved transactions to CSV")
+        df.to_csv(filename, index=False)
+
+
+# Load access token from file
+def __load_access_token():
+    with open("files/monzo_access_token.txt", "r") as file:
+        return file.read().strip()
